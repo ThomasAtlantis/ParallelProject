@@ -20,8 +20,10 @@ void MPI_Allgatherv_mine(
         strncpy((char *)recv_buff, (char *)send_buff, send_count * sizeof(send_type));
         recv_count = send_count;
         for (i = root + 1; i < pn; ++ i) {
-            MPI_Recv((char *)recv_buff + recv_count * sizeof(recv_type), recv_counts[i], recv_type, i, 0, MPI_COMM_WORLD, &status);
+            // MPI_Recv((double *)recv_buff + recv_count, recv_counts[i], recv_type, i, 0, MPI_COMM_WORLD, &status);
+            MPI_Recv((char *)recv_buff + recv_count * sizeof(send_type), recv_counts[i], recv_type, i, 0, MPI_COMM_WORLD, &status);
             recv_count += recv_counts[i];
+            // printf("%lu, %lu\n", sizeof(double), sizeof(send_type));
         }
         for (i = root + 1; i < pn; ++ i) {
             MPI_Send(recv_buff, recv_count, send_type, i, 0, MPI_COMM_WORLD);
@@ -29,7 +31,7 @@ void MPI_Allgatherv_mine(
     }
 }
 
-void display(double pp, const double * recv_buff, const int * recv_counts, double elapsed_time) {
+void display(float pp, const float * recv_buff, const int * recv_counts, double elapsed_time) {
     int i, pn, id, offset = 0;
     MPI_Comm_size(MPI_COMM_WORLD, &pn);
     MPI_Comm_rank(MPI_COMM_WORLD, &id);
@@ -46,28 +48,29 @@ void display(double pp, const double * recv_buff, const int * recv_counts, doubl
 int main(int argc, char* argv[]) {
     double elapsed_time;
     int i, id, pn, recv_counts[maxp];
-    double send_buff[size], recv_buff[size * maxp];
+    float send_buff[size], recv_buff[size * maxp];
 
     MPI_Init(&argc, &argv);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Comm_rank(MPI_COMM_WORLD, &id);
     MPI_Comm_size(MPI_COMM_WORLD, &pn);
 
-    const double pi = 3.1415926535;
-    const double pp = (id + 1) * pi;
+    const float pi = 3.1415926535;
+    const float pp = (id + 1) * pi;
     for (int i = 0; i < size; ++ i) {
         send_buff[i] = pp;
     }
     for (int i = 0; i < pn; ++ i) {
         recv_counts[i] = size;
     }
-    printf("MPI_DOUBLE: %lu, double: %lu\n", sizeof(MPI_DOUBLE), sizeof(double));
 
     elapsed_time = -MPI_Wtime();
-    MPI_Allgatherv_mine(send_buff, size, MPI_DOUBLE, recv_buff, recv_counts, MPI_DOUBLE);
+    // MPI_Allgatherv_mine(send_buff, size, MPI_DOUBLE, recv_buff, recv_counts, MPI_DOUBLE);
+    MPI_Allgatherv_mine(send_buff, size, MPI_FLOAT, recv_buff, recv_counts, MPI_FLOAT);
     elapsed_time += MPI_Wtime();
 
     display(pp, recv_buff, recv_counts, elapsed_time);
+    //printf("%lu, %lu\n", sizeof(MPI_FLOAT), sizeof(float));
 
     MPI_Finalize();
     return 0;
